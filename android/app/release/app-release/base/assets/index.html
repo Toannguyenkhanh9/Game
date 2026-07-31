@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Alien Hunters</title>
+    <link rel="icon" type="image/x-icon" href="media/graphics/misc/favicon.ico" />
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+
+    <meta property="og:image"
+        content="https://bestgamesfreeplay.com/demo/alien-hunters/media/graphics/misc/512x512.png" />
+    <meta property="og:description"
+        content="Step into the thrilling world of 'Alien Hunters' - a fast-paced game for stealthy and strategic players that takes you on a wild adventure as a hunter with a deadly knife. With multiple enemies to kill, challenging missions to complete and rewards to collect, this game will test your skills and keep you on the edge of your seat.Discover the Unique Characters of Alien Hunters!" />
+
+    <meta name="viewport"
+        content="width=device-width,height=device-height, initial-scale=1, maximum-scale=1, user-scalable=0, shrink-to-fit=no, minimal-ui" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="stylesheet" type="text/css" href="play.css?v=1721780088">
+    <script type="text/javascript" src="play.js?v=1721780088"></script>
+
+    <!-- AnalyticsCode -->
+
+    <!-- APICode -->
+</head>
+
+<body onload="setTimeout(function(){window.scrollTo(0,1)},1);">
+    <!--body-->
+    <div id="xloader">
+        <div id="game"><canvas id="canvas"></canvas></div>
+        <div id="orientate"><img src="media/graphics/misc/orientation.png" /></div>
+        <div id="play" class="play" onclick=""></div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div id="leaderboard" class="overlay">
+        <div class="popupBox">
+            <span class="close">&times;</span>
+            <div class="popupTitle text-Leaderboard">LEADERBOARD</div>
+            <div class="popupMsg lb-content">
+                <div id="lb-data">
+                    <div class="row">
+                        <div class="column lb-rank">1</div>
+                        <div class="column lb-image"><span></span></div>
+                        <div class="column lb-username">User A</div>
+                        <div class="column lb-score">100,000</div>
+                    </div>
+                    <div class="row lb-currentUser">
+                        <div class="column lb-rank">2</div>
+                        <div class="column lb-image"><span></span></div>
+                        <div class="column lb-username">User B</div>
+                        <div class="column lb-score">80,000</div>
+                    </div>
+                    <div class="row">
+                        <div class="column lb-rank">3</div>
+                        <div class="column lb-image"><span></span></div>
+                        <div class="column lb-username">User C</div>
+                        <div class="column lb-score">1,000</div>
+                    </div>
+                    <div class="row">
+                        <div class="column lb-rank">30</div>
+                        <div class="column lb-image"><span></span></div>
+                        <div class="column lb-username">User C</div>
+                        <div class="column lb-score">1,000</div>
+                    </div>
+                </div>
+                <div class="lb-footer" id='lb-footer-1'>
+                    <div><u class="text-YourResult" style="padding-right: 2.5em;">Your Result:</u></div>
+                    <div class="row lb-currentUser">
+                        <div class="column lb-rank">98</div>
+                        <div class="column lb-image"><span></span></div>
+                        <div class="column lb-username">User B</div>
+                        <div class="column lb-score">80,000</div>
+                    </div>
+                </div>
+                <div class="lb-footer" id='lb-footer-2' style="padding-right: 1.5em;">
+                    <div class="text-Join">Join The Leaderboard?</div>
+                    <input type="text" id="username" placeholder="Username" maxlength="20"> <input type="button"
+                        class="button" value="Submit" id="submit" />
+                </div>
+                <div class="adjustSpace"></div>
+            </div>
+        </div>
+    </div>
+    <!-- END LEADERBOARD -->
+
+    <!-- AD OVERLAY -->
+    <div id="adOverlay" class="overlay">
+        <div id="adBox">
+            <img src="media/graphics/misc/gloader.svg" />
+            <div class="text-ShowingAd">Showing ad in ...</div>
+        </div>
+    </div>
+
+
+    <!-- SNACKBAR -->
+    <div id="snackbar">Hello</div>
+</body>
+
+</html>

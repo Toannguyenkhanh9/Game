@@ -51,6 +51,7 @@ react {
     // hermesFlags = ["-O", "-output-source-map"]
 
     /* Autolinking */
+    nodeExecutableAndArgs = ["/home/kevin/.nvm/versions/node/v24.15.0/bin/node"]
     autolinkLibrariesWithApp()
 }
 
@@ -79,11 +80,12 @@ android {
 
     namespace "com.appremoveads"
     defaultConfig {
-        applicationId "com.appremoveads"
+        applicationId "com.nexus.tripeaksmanor"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode 16
         versionName "1.0"
+        missingDimensionStrategy 'store', 'play'
     }
     signingConfigs {
         debug {

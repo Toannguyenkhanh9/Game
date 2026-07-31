@@ -1,4 +1,8 @@
 {
   "name": "AppRemoveAds",
-  "displayName": "AppRemoveAds"
+  "displayName": "AppRemoveAds",
+      "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-6025850831913874~3886284707",
+    "ios_app_id": "ca-app-pub-xxxxxxxx~xxxxxxxx"
+  }
 }
