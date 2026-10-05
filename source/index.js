@@ -28,9 +28,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import InAppReview from 'react-native-in-app-review';
 import {useIAP} from 'react-native-iap';
 
-const SHOW_ADS_AFTER_SECONDS = 45;
+const FILE_WEBVIEW_FETCH_POLYFILL =
+  "(function () {\n  \"use strict\";\n\n  if (window.__CASTLE_FILE_FETCH_V2__) {\n    return true;\n  }\n\n  window.__CASTLE_FILE_FETCH_V2__ = true;\n\n  var nativeFetch =\n    typeof window.fetch === \"function\"\n      ? window.fetch.bind(window)\n      : null;\n\n  function inputUrl(input) {\n    if (typeof input === \"string\") {\n      return input;\n    }\n\n    if (\n      input &&\n      typeof input.url === \"string\"\n    ) {\n      return input.url;\n    }\n\n    return String(input || \"\");\n  }\n\n  function methodOf(input, init) {\n    if (\n      init &&\n      init.method\n    ) {\n      return String(init.method).toUpperCase();\n    }\n\n    if (\n      input &&\n      input.method\n    ) {\n      return String(input.method).toUpperCase();\n    }\n\n    return \"GET\";\n  }\n\n  function contentType(pathname) {\n    var value =\n      String(pathname || \"\")\n        .toLowerCase();\n\n    if (value.endsWith(\".json\")) {\n      return \"application/json\";\n    }\n    if (value.endsWith(\".js\")) {\n      return \"application/javascript\";\n    }\n    if (value.endsWith(\".css\")) {\n      return \"text/css\";\n    }\n    if (value.endsWith(\".png\")) {\n      return \"image/png\";\n    }\n    if (value.endsWith(\".webp\")) {\n      return \"image/webp\";\n    }\n    if (\n      value.endsWith(\".jpg\") ||\n      value.endsWith(\".jpeg\")\n    ) {\n      return \"image/jpeg\";\n    }\n    if (value.endsWith(\".svg\")) {\n      return \"image/svg+xml\";\n    }\n    if (value.endsWith(\".mp3\")) {\n      return \"audio/mpeg\";\n    }\n    if (value.endsWith(\".ogg\")) {\n      return \"audio/ogg\";\n    }\n    if (value.endsWith(\".wav\")) {\n      return \"audio/wav\";\n    }\n    if (value.endsWith(\".woff2\")) {\n      return \"font/woff2\";\n    }\n    if (value.endsWith(\".woff\")) {\n      return \"font/woff\";\n    }\n    if (value.endsWith(\".ttf\")) {\n      return \"font/ttf\";\n    }\n    if (value.endsWith(\".otf\")) {\n      return \"font/otf\";\n    }\n\n    return \"application/octet-stream\";\n  }\n\n  function cleanFileUrl(urlObject) {\n    var clean =\n      String(urlObject.href);\n\n    var hashIndex =\n      clean.indexOf(\"#\");\n\n    if (hashIndex >= 0) {\n      clean =\n        clean.substring(0, hashIndex);\n    }\n\n    var queryIndex =\n      clean.indexOf(\"?\");\n\n    if (queryIndex >= 0) {\n      clean =\n        clean.substring(0, queryIndex);\n    }\n\n    return clean;\n  }\n\n  function xhrFileFetch(\n    urlObject,\n    input,\n    init\n  ) {\n    return new Promise(function (\n      resolve,\n      reject\n    ) {\n      var method =\n        methodOf(input, init);\n\n      if (\n        method !== \"GET\" &&\n        method !== \"HEAD\"\n      ) {\n        reject(\n          new TypeError(\n            \"Unsupported local method: \" +\n              method\n          )\n        );\n        return;\n      }\n\n      var xhr =\n        new XMLHttpRequest();\n\n      var url =\n        cleanFileUrl(urlObject);\n\n      try {\n        xhr.open(\n          method,\n          url,\n          true\n        );\n\n        xhr.responseType =\n          \"arraybuffer\";\n      } catch (error) {\n        reject(error);\n        return;\n      }\n\n      xhr.onload = function () {\n        var status =\n          xhr.status === 0\n            ? 200\n            : xhr.status;\n\n        if (\n          status < 200 ||\n          status >= 400\n        ) {\n          reject(\n            new TypeError(\n              \"Local XHR status \" +\n                status +\n                \": \" +\n                url\n            )\n          );\n          return;\n        }\n\n        var headers =\n          new Headers();\n\n        headers.set(\n          \"Content-Type\",\n          contentType(\n            urlObject.pathname\n          )\n        );\n\n        var body =\n          method === \"HEAD\"\n            ? null\n            : (\n                xhr.response ||\n                new ArrayBuffer(0)\n              );\n\n        resolve(\n          new Response(\n            body,\n            {\n              status: 200,\n              statusText: \"OK\",\n              headers: headers\n            }\n          )\n        );\n      };\n\n      xhr.onerror = function () {\n        reject(\n          new TypeError(\n            \"Local XHR failed: \" +\n              url\n          )\n        );\n      };\n\n      xhr.onabort = function () {\n        reject(\n          new DOMException(\n            \"Aborted\",\n            \"AbortError\"\n          )\n        );\n      };\n\n      var signal =\n        init &&\n        init.signal;\n\n      if (signal) {\n        if (signal.aborted) {\n          xhr.abort();\n          return;\n        }\n\n        signal.addEventListener(\n          \"abort\",\n          function () {\n            xhr.abort();\n          },\n          {once: true}\n        );\n      }\n\n      xhr.send(null);\n    });\n  }\n\n  window.fetch = function (\n    input,\n    init\n  ) {\n    var raw =\n      inputUrl(input);\n\n    var resolved;\n\n    try {\n      resolved =\n        new URL(\n          raw,\n          window.location.href\n        );\n    } catch (error) {\n      if (nativeFetch) {\n        return nativeFetch(\n          input,\n          init\n        );\n      }\n\n      return Promise.reject(error);\n    }\n\n    if (\n      resolved.protocol === \"file:\"\n    ) {\n      console.log(\n        \"[FileWebView V2] XHR:\",\n        resolved.pathname\n      );\n\n      return xhrFileFetch(\n        resolved,\n        input,\n        init\n      );\n    }\n\n    if (!nativeFetch) {\n      return Promise.reject(\n        new TypeError(\n          \"fetch is unavailable\"\n        )\n      );\n    }\n\n    return nativeFetch(\n      input,\n      init\n    );\n  };\n\n  console.log(\n    \"[FileWebView V2] installed before PIXI\"\n  );\n\n  return true;\n})();\ntrue;";
+
+const SHOW_ADS_AFTER_SECONDS = 120;
 const REMOVE_ADS_PRODUCT_ID =
-  'com.nexus.tripeaksmanor.remove_ads';
+  'com.nexus.puppymatch.remove_ads';
 
 // Hỏi đánh giá sau 3 lần game gửi mốc interstitial.
 // Khi chọn "Để sau", ứng dụng chờ 7 ngày mới hỏi lại.
@@ -41,15 +44,20 @@ const REVIEW_STATE_KEY =
 
 const bannerUnitId = __DEV__
   ? TestIds.BANNER
-  : 'ca-app-pub-6025850831913874/7315355251';
+  : TestIds.BANNER;
 
-const interstitialUnitId = __DEV__
-  ? TestIds.INTERSTITIAL
-  : 'ca-app-pub-6025850831913874/6881306643';
+// Điền Ad Unit ID interstitial thật ở đây trước khi release.
+// Để trống => tự dùng TestIds.INTERSTITIAL.
+const PROD_INTERSTITIAL_UNIT_ID = '';
 
-// Thay bằng Rewarded Ad Unit thật trước khi phát hành.
-// Khi để trống, ứng dụng dùng TestIds.REWARDED.
-const PROD_REWARDED_UNIT_ID = 'ca-app-pub-6025850831913874/2150199343';
+// Rewarded Ad Unit hiện có của bạn.
+const PROD_REWARDED_UNIT_ID =
+  '';
+
+const interstitialUnitId =
+  __DEV__ || !PROD_INTERSTITIAL_UNIT_ID
+    ? TestIds.INTERSTITIAL
+    : PROD_INTERSTITIAL_UNIT_ID;
 
 const rewardedUnitId =
   __DEV__ || !PROD_REWARDED_UNIT_ID
@@ -483,6 +491,9 @@ function getTexts() {
   };
 }
 
+// Native ads protocol used by the HTML5 game:
+// PRELOAD_NATIVE_AD, SHOW_INTERSTITIAL_AD, SHOW_REWARDED_AD.
+// React Native returns each request through window.completeNativeAd(...).
 function parseGameMessage(rawData) {
   try {
     return JSON.parse(rawData);
@@ -518,6 +529,29 @@ function isUserCancelled(error) {
   );
 }
 
+function waitForAdLoaded(loadedRef, timeoutMs = 8000) {
+  if (loadedRef.current) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise(resolve => {
+    const startedAt = Date.now();
+
+    const timer = setInterval(() => {
+      if (loadedRef.current) {
+        clearInterval(timer);
+        resolve(true);
+        return;
+      }
+
+      if (Date.now() - startedAt >= timeoutMs) {
+        clearInterval(timer);
+        resolve(false);
+      }
+    }, 100);
+  });
+}
+
 export default function Main() {
   const webViewRef = useRef(null);
   const secondsRef = useRef(0);
@@ -529,6 +563,11 @@ export default function Main() {
     useRef(false);
 
   const adShowingRef =
+    useRef(false);
+
+  // Cho phép interstitial đầu tiên xuất hiện ngay ở lần kết thúc màn đầu tiên.
+  // Sau khi một interstitial đã đóng, các lần tiếp theo phải cách ít nhất 120 giây.
+  const hasShownInterstitialRef =
     useRef(false);
 
   const rewardedEarnedRef =
@@ -692,9 +731,24 @@ export default function Main() {
           (function () {
             var result = ${serialized};
 
+            var handled = false;
+
+            // webview-sdk.js của game đang chờ callback này.
+            if (typeof window.completeNativeAd === 'function') {
+              handled = Boolean(
+                window.completeNativeAd(
+                  result.adType,
+                  Boolean(result.success),
+                  result.requestId
+                )
+              );
+            }
+
+            // Giữ tương thích với bridge cũ nếu có.
             if (
+              !handled &&
               typeof window.__TRIPEAKS_NATIVE_AD_RESULT__ ===
-              'function'
+                'function'
             ) {
               window.__TRIPEAKS_NATIVE_AD_RESULT__(
                 result
@@ -1014,6 +1068,9 @@ export default function Main() {
           adShowingRef.current =
             false;
 
+          hasShownInterstitialRef.current =
+            true;
+
           secondsRef.current = 0;
 
           resolveInterstitialRequest(
@@ -1155,44 +1212,56 @@ export default function Main() {
   }, [resolveRewardedRequest]);
 
   const showInterstitialAd =
-    useCallback(() => {
-      return new Promise(resolve => {
-        // Đã mua Remove Ads:
-        // bỏ qua interstitial nhưng trả true
-        // để game tiếp tục.
-        if (hasRemovedAds) {
-          resolve(true);
-          return;
-        }
+    useCallback(async () => {
+      // Đã mua Remove Ads: bỏ qua interstitial nhưng cho game tiếp tục.
+      if (hasRemovedAds) {
+        return true;
+      }
 
-        if (
-          secondsRef.current <
+      if (
+        hasShownInterstitialRef.current &&
+        secondsRef.current <
           SHOW_ADS_AFTER_SECONDS
-        ) {
-          resolve(false);
-          return;
-        }
+      ) {
+        console.log(
+          'Interstitial cooldown:',
+          secondsRef.current,
+          '/',
+          SHOW_ADS_AFTER_SECONDS,
+          'seconds',
+        );
+        return false;
+      }
 
-        if (
-          adShowingRef.current
-        ) {
-          resolve(false);
-          return;
-        }
+      if (adShowingRef.current) {
+        return false;
+      }
 
-        if (
-          !interstitialLoadedRef.current
-        ) {
-          interstitial.load();
-          resolve(false);
-          return;
-        }
+      if (!interstitialLoadedRef.current) {
+        console.log(
+          'Interstitial requested before ready, waiting for load...',
+        );
 
+        interstitial.load();
+
+        const ready = await waitForAdLoaded(
+          interstitialLoadedRef,
+          8000,
+        );
+
+        if (!ready) {
+          console.log(
+            'Interstitial was not ready after waiting.',
+          );
+          return false;
+        }
+      }
+
+      return new Promise(resolve => {
         pendingInterstitialResolveRef.current =
           resolve;
 
-        adShowingRef.current =
-          true;
+        adShowingRef.current = true;
 
         interstitial
           .show()
@@ -1202,16 +1271,11 @@ export default function Main() {
               error,
             );
 
-            adShowingRef.current =
-              false;
-
+            adShowingRef.current = false;
             interstitialLoadedRef.current =
               false;
 
-            resolveInterstitialRequest(
-              false,
-            );
-
+            resolveInterstitialRequest(false);
             interstitial.load();
           });
       });
@@ -1221,31 +1285,37 @@ export default function Main() {
     ]);
 
   const showRewardedAd =
-    useCallback(() => {
+    useCallback(async () => {
+      if (adShowingRef.current) {
+        return false;
+      }
+
+      if (!rewardedLoadedRef.current) {
+        console.log(
+          'Rewarded requested before ready, waiting for load...',
+        );
+
+        rewarded.load();
+
+        const ready = await waitForAdLoaded(
+          rewardedLoadedRef,
+          10000,
+        );
+
+        if (!ready) {
+          console.log(
+            'Rewarded was not ready after waiting.',
+          );
+          return false;
+        }
+      }
+
       return new Promise(resolve => {
-        if (
-          adShowingRef.current
-        ) {
-          resolve(false);
-          return;
-        }
-
-        if (
-          !rewardedLoadedRef.current
-        ) {
-          rewarded.load();
-          resolve(false);
-          return;
-        }
-
         pendingRewardedResolveRef.current =
           resolve;
 
-        rewardedEarnedRef.current =
-          false;
-
-        adShowingRef.current =
-          true;
+        rewardedEarnedRef.current = false;
+        adShowingRef.current = true;
 
         rewarded
           .show()
@@ -1255,19 +1325,11 @@ export default function Main() {
               error,
             );
 
-            adShowingRef.current =
-              false;
+            adShowingRef.current = false;
+            rewardedLoadedRef.current = false;
+            rewardedEarnedRef.current = false;
 
-            rewardedLoadedRef.current =
-              false;
-
-            rewardedEarnedRef.current =
-              false;
-
-            resolveRewardedRequest(
-              false,
-            );
-
+            resolveRewardedRequest(false);
             rewarded.load();
           });
       });
@@ -1435,9 +1497,45 @@ export default function Main() {
           );
 
         console.log(
-          'Message from WebView:',
+          '[NativeAds] Message from WebView:',
           message,
         );
+
+        if (
+          message.type ===
+          'PRELOAD_NATIVE_AD'
+        ) {
+          if (message.adType === 'rewarded') {
+            if (!rewardedLoadedRef.current) {
+              rewarded.load();
+            }
+          } else if (
+            message.adType === 'interstitial' &&
+            !hasRemovedAds &&
+            !interstitialLoadedRef.current
+          ) {
+            interstitial.load();
+          }
+
+          return;
+        }
+
+        // Game gọi GBCXPromo.gameOver(levelId) khi kết thúc/thoát một màn.
+        // webview-wrapper.js chuyển nó thành message promoGameOver.
+        // Đây là điểm tự nhiên để thử hiển thị interstitial.
+        // showInterstitialAd() tự chặn nếu chưa đủ cooldown 120 giây.
+        if (
+          message.type ===
+          'promoGameOver'
+        ) {
+          console.log(
+            'Level finished, request interstitial:',
+            message.levelId,
+          );
+
+          await showInterstitialAd();
+          return;
+        }
 
         if (
           message.type ===
@@ -1501,6 +1599,7 @@ export default function Main() {
         );
       },
       [
+        hasRemovedAds,
         recordProgressAndMaybeAskForReview,
         sendNativeAdResult,
         showInterstitialAd,
@@ -1519,6 +1618,9 @@ export default function Main() {
             uri:
               'file:///android_asset/index.html',
           }}
+          injectedJavaScriptBeforeContentLoaded={
+            FILE_WEBVIEW_FETCH_POLYFILL
+          }
           javaScriptEnabled={true}
           domStorageEnabled={true}
           allowFileAccess={true}
@@ -1543,9 +1645,21 @@ export default function Main() {
           onMessage={
             onMessageReturn
           }
+          onError={event => {
+            console.log(
+              '[DailyJigsaw WebView error]',
+              event.nativeEvent,
+            );
+          }}
+          onHttpError={event => {
+            console.log(
+              '[DailyJigsaw WebView HTTP error]',
+              event.nativeEvent,
+            );
+          }}
         />
 
-        {!hasRemovedAds ? (
+        {/* {!hasRemovedAds ? (
           <View
             style={
               styles.topRightBox
@@ -1596,10 +1710,10 @@ export default function Main() {
               </Text>
             </TouchableOpacity>
           </View>
-        ) : null}
+        ) : null} */}
       </View>
 
-      {/* {!hasRemovedAds ? (
+        {/* {!hasRemovedAds ? (
         <BannerAd
           unitId={bannerUnitId}
           size={
@@ -1611,7 +1725,7 @@ export default function Main() {
               true,
           }}
         />
-      ) : null} */}
+      ) : null}   */}
     </View>
   );
 }

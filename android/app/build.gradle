@@ -80,10 +80,10 @@ android {
 
     namespace "com.appremoveads"
     defaultConfig {
-        applicationId "com.nexus.tripeaksmanor"
+        applicationId "com.nexus.coreball"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
+        versionCode 10
         versionName "1.0"
         missingDimensionStrategy 'store', 'play'
     }
